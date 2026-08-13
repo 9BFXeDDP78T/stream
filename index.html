@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Stream Search</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #0f1117;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 80px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        #search {
+            width: 100%;
+            padding: 15px 18px;
+            font-size: 18px;
+            border: 1px solid #333;
+            border-radius: 10px;
+            outline: none;
+            background: #1a1d25;
+            color: white;
+        }
+
+        #search:focus {
+            border-color: #5865f2;
+        }
+
+        #results {
+            margin-top: 8px;
+            background: #1a1d25;
+            border: 1px solid #333;
+            border-radius: 10px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .result {
+            padding: 13px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #2a2d35;
+        }
+
+        .result:last-child {
+            border-bottom: none;
+        }
+
+        .result:hover {
+            background: #292d3a;
+        }
+
+        .username {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .result-url {
+            font-size: 12px;
+            color: #888;
+            margin-top: 4px;
+            word-break: break-all;
+        }
+
+        .selected {
+            margin-top: 25px;
+            padding: 20px;
+            background: #1a1d25;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .selected h2 {
+            margin-top: 0;
+        }
+
+        .link {
+            color: #7289ff;
+            word-break: break-all;
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 7px;
+            background: #5865f2;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background: #4752c4;
+        }
+
+        .status {
+            text-align: center;
+            color: #888;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Stream Search</h1>
+
+    <div class="search-box">
+
+        <input
+            type="text"
+            id="search"
+            placeholder="Search username..."
+            autocomplete="off"
+        >
+
+        <div id="results"></div>
+
+    </div>
+
+    <div id="status" class="status">
+        Loading streams...
+    </div>
+
+    <div id="selected" class="selected">
+
+        <h2 id="selectedName"></h2>
+
+        <div>
+            <a
+                id="selectedLink"
+                class="link"
+                href="#"
+                target="_blank"
+                rel="noopener noreferrer"
+            ></a>
+        </div>
+
+        <button id="copyButton">
+            Copy Link
+        </button>
+
+    </div>
+
+</div>
+
+
+<script>
+
+let streams = {};
+
+const searchInput = document.getElementById("search");
+const resultsDiv = document.getElementById("results");
+const statusDiv = document.getElementById("status");
+
+const selectedDiv = document.getElementById("selected");
+const selectedName = document.getElementById("selectedName");
+const selectedLink = document.getElementById("selectedLink");
+const copyButton = document.getElementById("copyButton");
+
+
+// Load streams.json
+fetch("./streams.json")
+    .then(response => {
+
+        if (!response.ok) {
+            throw new Error(
+                "Could not load streams.json (" +
+                response.status +
+                ")"
+            );
+        }
+
+        return response.json();
+    })
+    .then(data => {
+
+        streams = data;
+
+        statusDiv.textContent =
+            Object.keys(streams).length +
+            " streams loaded";
+
+    })
+    .catch(error => {
+
+        console.error(error);
+
+        statusDiv.textContent =
+            "Error loading streams.json";
+
+    });
+
+
+// Search while typing
+searchInput.addEventListener("input", function () {
+
+    const query = this.value.trim().toLowerCase();
+
+    resultsDiv.innerHTML = "";
+
+    selectedDiv.style.display = "none";
+
+    if (!query) {
+        resultsDiv.style.display = "none";
+        return;
+    }
+
+    const matches = Object.keys(streams)
+        .filter(username =>
+            username.toLowerCase().startsWith(query)
+        )
+        .slice(0, 50);
+
+
+    if (matches.length === 0) {
+
+        resultsDiv.innerHTML = `
+            <div class="result">
+                No matches found
+            </div>
+        `;
+
+        resultsDiv.style.display = "block";
+
+        return;
+    }
+
+
+    matches.forEach(username => {
+
+        const div = document.createElement("div");
+
+        div.className = "result";
+
+        div.innerHTML = `
+            <div class="username">
+                ${escapeHtml(username)}
+            </div>
+
+            <div class="result-url">
+                ${escapeHtml(streams[username])}
+            </div>
+        `;
+
+        div.addEventListener("click", () => {
+
+            selectStream(username);
+
+        });
+
+        resultsDiv.appendChild(div);
+
+    });
+
+
+    resultsDiv.style.display = "block";
+
+});
+
+
+// Select a username
+function selectStream(username) {
+
+    const url = streams[username];
+
+    searchInput.value = username;
+
+    resultsDiv.style.display = "none";
+
+    selectedName.textContent = username;
+
+    selectedLink.textContent = url;
+
+    selectedLink.href = url;
+
+    selectedDiv.style.display = "block";
+
+}
+
+
+// Copy URL
+copyButton.addEventListener("click", async () => {
+
+    const url = selectedLink.href;
+
+    try {
+
+        await navigator.clipboard.writeText(url);
+
+        copyButton.textContent = "Copied!";
+
+        setTimeout(() => {
+
+            copyButton.textContent = "Copy Link";
+
+        }, 1500);
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert("Could not copy the link.");
+
+    }
+
+});
+
+
+// Prevent JSON values from being interpreted as HTML
+function escapeHtml(value) {
+
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+}
+
+</script>
+
+</body>
+</html>
