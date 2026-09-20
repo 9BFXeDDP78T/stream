@@ -525,5 +525,6 @@
   "ramune_2525": "https://edge-hls.sacdnssedge.com/hls/184529332/master/184529332_auto.m3u8",
   "Ui_channel": "https://edge-hls.sacdnssedge.com/hls/269073604/master/269073604_auto.m3u8",
   "yuno_o1": "https://edge-hls.sacdnssedge.com/hls/276643131/master/276643131_auto.m3u8",
-  "yura_yukino": "https://edge-hls.sacdnssedge.com/hls/276798585/master/276798585_auto.m3u8"
+  "yura_yukino": "https://edge-hls.sacdnssedge.com/hls/276798585/master/276798585_auto.m3u8",
+  "-meru-run-": "https://edge-hls.sacdnssedge.com/hls/122550606/master/122550606_auto.m3u8"
 }
